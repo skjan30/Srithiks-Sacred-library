@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Sacred Library</title>
+  <style>
+    :root{
+      --bg1:#fef3c7; --bg2:#ffffff; --bg3:#dbeafe; --ink:#111111; --paper:#fffdf6; --panel:#ffffff;
+      --orange:#fdba74; --green:#bbf7d0; --red:#fecaca; --shadow:8px 8px 0 rgba(0,0,0,.88); --soft-shadow:4px 4px 0 rgba(0,0,0,.82);
+    }
+    *{box-sizing:border-box} body{margin:0;font-family:"Trebuchet MS","Segoe UI",Arial,sans-serif;color:var(--ink);background:radial-gradient(circle at top,var(--bg1),var(--bg2) 50%,var(--bg3));min-height:100vh}
+    .app{max-width:1220px;margin:0 auto;padding:24px}
+    .hero,.book-card,.sidebar,.book-area,.quiz-card,.result-card{background:var(--panel);border:3px solid #000;border-radius:30px;box-shadow:var(--shadow)}
+    .hero{padding:28px;margin-bottom:28px}
+    .eyebrow,.smallcaps{font-size:12px;letter-spacing:.2em;text-transform:uppercase;font-weight:900;color:#9a5d00}
+    h1{margin:.35rem 0 0;font-size:clamp(2.2rem, 5vw, 4.2rem);line-height:1.05}
+    .hero p{max-width:850px;font-size:1.08rem;line-height:1.7;color:#444}.html-note{margin-top:16px;font-size:.95rem;color:#555;line-height:1.7}
+    .shelf{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:24px}
+    .book-card{padding:18px;display:flex;flex-direction:column;gap:16px}
+    .cover{border-radius:24px;padding:22px;min-height:240px;border:2px solid rgba(0,0,0,.12);display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden}
+    .cover::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg, rgba(255,255,255,.45), transparent 40%),repeating-linear-gradient(90deg, rgba(255,255,255,.12), rgba(255,255,255,.12) 6px, transparent 6px, transparent 18px);pointer-events:none}
+    .cover-icon{position:absolute;top:20px;left:20px;font-size:54px;z-index:1}
+    .ramayana{background:linear-gradient(135deg,#fed7aa,#fde68a)} .gita{background:linear-gradient(135deg,#bfdbfe,#c7d2fe)} .vedas{background:linear-gradient(135deg,#bbf7d0,#d9f99d)}
+    .cover .eyebrow,.cover h2,.cover .desc{position:relative;z-index:1}.cover h2{font-size:2rem;margin:.35rem 0}.desc{line-height:1.55;color:#333}
+    .button-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    button{border:3px solid #000;border-radius:18px;background:white;color:#000;font-weight:900;padding:14px 16px;cursor:pointer;box-shadow:var(--soft-shadow);transition:transform .14s ease, background .14s ease, opacity .14s ease;font-size:.98rem}
+    button:hover{transform:translateY(-2px)} button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .primary{background:var(--orange)} .gold{background:#fde68a} .muted{background:#f3f4f6;color:#555} .success{background:var(--green)} .danger{background:var(--red)}
+    .reader-shell{display:none;gap:24px;align-items:start}.reader-shell.active{display:grid;grid-template-columns:minmax(280px,360px) 1fr}
+    .sidebar{padding:22px;position:sticky;top:20px}.book-badge{font-size:58px;margin-bottom:18px}.mode-switch{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+    .mode-note{margin-top:20px;background:rgba(255,255,255,.7);border:3px solid #000;border-radius:22px;padding:16px;line-height:1.6;color:#444}
+    .book-area{background:#fdf7e8;border-width:4px;padding:18px}.book-header,.top-actions{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}.book-header{align-items:flex-start;margin-bottom:18px}.top-actions{align-items:center;margin-bottom:14px}
+    .page-count{border:3px solid #000;border-radius:999px;background:#fde68a;padding:10px 16px;font-weight:900;white-space:nowrap}
+    .book-stage{position:relative;min-height:520px;perspective:1800px}
+    .page{position:absolute;inset:0;background:var(--paper);border:3px solid #000;border-radius:28px;box-shadow:6px 6px 0 rgba(0,0,0,.15);padding:26px 28px;transform-origin:left center;backface-visibility:hidden;overflow:auto}
+    .page::before{content:"";position:absolute;inset:0 auto 0 0;width:30px;background:linear-gradient(90deg, rgba(231,197,114,.45), transparent);border-radius:24px 0 0 24px;pointer-events:none}
+    .page-title{font-size:2rem;font-weight:900;margin:0 0 16px;line-height:1.15;position:relative;z-index:1}
+    .page-text{position:relative;z-index:1;font-size:1.12rem;line-height:1.95;color:#2f2f2f;white-space:pre-line;padding-right:6px}
+    .page.enter-from-right{animation:flipInRight .55s ease both}.page.exit-to-left{animation:flipOutLeft .38s ease both}.page.enter-from-left{animation:flipInLeft .55s ease both}.page.exit-to-right{animation:flipOutRight .38s ease both}
+    @keyframes flipInRight{from{transform:translateX(44px) rotateY(-88deg);opacity:0}to{transform:translateX(0) rotateY(0deg);opacity:1}}
+    @keyframes flipOutLeft{from{transform:translateX(0) rotateY(0deg);opacity:1}to{transform:translateX(-28px) rotateY(88deg);opacity:0}}
+    @keyframes flipInLeft{from{transform:translateX(-44px) rotateY(88deg);opacity:0}to{transform:translateX(0) rotateY(0deg);opacity:1}}
+    @keyframes flipOutRight{from{transform:translateX(0) rotateY(0deg);opacity:1}to{transform:translateX(28px) rotateY(-88deg);opacity:0}}
+    .reader-actions{display:flex;justify-content:space-between;gap:12px;margin-top:18px;flex-wrap:wrap}
+    .quiz-card,.result-card{padding:20px}.quiz-title{font-size:1.7rem;font-weight:900;margin:0}
+    .question-block{margin-top:18px;padding:16px;border:3px solid #000;border-radius:22px;background:#fffdf7}
+    .question-text{font-weight:900;margin-bottom:12px;line-height:1.6}.option-list{display:grid;gap:10px}
+    .option-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:2px solid #000;border-radius:16px;background:#fff}
+    .option-item input{margin-top:3px;transform:scale(1.15)}
+    .quiz-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}.score-big{font-size:2rem;font-weight:900;margin:.4rem 0}.answer-review{margin-top:14px;display:grid;gap:12px}
+    .review-item{padding:14px;border:3px solid #000;border-radius:20px;background:#fffdf7}.correct{background:var(--green)}.incorrect{background:var(--red)}
+    @media (max-width:900px){.reader-shell.active{grid-template-columns:1fr}.sidebar{position:static}.book-stage{min-height:600px}.page-title{font-size:1.65rem}.page-text{font-size:1.03rem;line-height:1.85}}
+  </style>
+</head>
+<body>
+  <div id="app" class="app">  <div style="text-align:center;margin:20px 0 8px;font-weight:900;color:#444">Made by Srithik Kumar</div>
+  </div>
+  <script>
+    const books = [
+      { id:'ramayana', title:'Ramayana', shelfLabel:'Epic Story', icon:'🏹', coverClass:'ramayana',
+        description:'Follow the journey of Rama, Sita, Lakshmana, and Hanuman through exile, courage, loyalty, and the triumph of good over evil.',
+        overviewPages:[
+          'Long ago, in the beautiful kingdom of Ayodhya, there lived a wise and kind king named Dasharatha. Even though he ruled his kingdom well, he was unhappy because he did not have any children. He prayed for many years, and finally his wish came true. He was blessed with four sons—Rama, Lakshmana, Bharata, and Shatrughna. Among them, Rama, the eldest, was known for his kindness, honesty, and bravery. Everyone in the kingdom loved him deeply.',
+          'As Rama grew older, he became strong and wise. One day, he traveled to the kingdom of Mithila, where a great contest was being held. Princess Sita’s father had announced that whoever could lift and string a powerful bow would win her hand in marriage. Many kings and warriors tried but failed. When Rama stepped forward, he lifted the bow with ease and even broke it in the process. Sita happily chose him as her husband, and their wedding was celebrated with great joy.',
+          'Back in Ayodhya, King Dasharatha decided it was time for Rama to become king. However, things did not go as planned. One of the king’s queens, Kaikeyi, reminded him of a promise he had made long ago. She asked that her son Bharata be crowned king instead and that Rama be sent into exile for fourteen years. Even though this was very unfair, Rama calmly accepted his fate because he always honored his father’s word. Sita and his loyal brother Lakshmana chose to go with him into the forest.',
+          'Life in the forest was very different from the palace. Rama, Sita, and Lakshmana lived simply and peacefully for many years. But one day, their lives changed forever. A powerful demon king named Ravana wanted to take Sita away. Using a clever trick involving a magical golden deer, he managed to separate Rama and Lakshmana from Sita. While they were away, Ravana kidnapped Sita and took her to his kingdom, Lanka.',
+          'When Rama returned and found Sita missing, he was filled with sadness but also determination. He set out to find her and soon met Hanuman, a brave and devoted monkey warrior. Hanuman became Rama’s greatest helper and friend. With his incredible strength and ability to fly, Hanuman crossed the ocean to Lanka, found Sita, and assured her that Rama would come to rescue her.',
+          'Rama then gathered an army of monkeys and bears to help him. Together, they built a bridge across the ocean to reach Lanka. A great battle followed between Rama’s army and Ravana’s forces. The fight was long and difficult, but in the end, Rama defeated Ravana, showing that good always triumphs over evil. Sita was finally rescued.',
+          'After completing the fourteen years of exile, Rama, Sita, and Lakshmana returned to Ayodhya. The people of the kingdom were overjoyed and welcomed them by lighting lamps all around the city. This celebration is remembered even today as the festival of Diwali. Rama was crowned king and ruled with fairness, wisdom, and kindness, bringing peace and happiness to his people.',
+          'The story of the Ramayana teaches us many important lessons. It reminds us to always choose what is right, even when it is difficult. It shows the importance of keeping promises, being loyal to family and friends, and having courage in the face of challenges. Above all, it teaches that goodness, truth, and love will always win in the end.'
+        ],
+        storyPages:[
+          {title:'The King of Ayodhya', text:'Long ago, in the shining city of Ayodhya, King Dasharatha ruled with wisdom and care. His people respected him, his kingdom was prosperous, and peace filled the land. Yet in his heart, the king carried a deep sadness: he had no children to carry on his name and guide the kingdom in the future. He prayed earnestly, and in time his wish was granted. Four sons were born—Rama, Lakshmana, Bharata, and Shatrughna. Of them all, Rama stood out from the beginning. He was gentle in speech, honest in action, and brave without pride. As he grew, the people of Ayodhya saw in him not only a prince, but the very image of goodness and grace.'},
+          {title:'The Bow of Mithila', text:'Years passed, and Rama grew into a strong and wise young prince. One day he traveled to Mithila, where King Janaka had arranged a grand contest for his daughter, Princess Sita. Before the gathered kings and warriors stood a mighty bow, so heavy and powerful that no ordinary person could even move it. One after another, proud rulers stepped forward and failed. When Rama’s turn came, he approached with calm confidence. To the amazement of everyone there, he lifted the bow with ease and, while stringing it, broke it in two. The sound echoed like thunder. Sita, who had watched with hope in her heart, joyfully chose Rama as her husband, and their wedding was celebrated with music, happiness, and blessings.'},
+          {title:'A Promise Changes Everything', text:'Back in Ayodhya, King Dasharatha decided that Rama should become king. The city rejoiced, for no one was more loved than Rama. But on the very eve of this happy moment, Queen Kaikeyi reminded Dasharatha of two promises he had once made her. She asked that Bharata be crowned instead and that Rama be sent into exile for fourteen years. Dasharatha was heartbroken, but he could not break his word. When Rama heard the news, he did not protest. He chose duty over comfort and honor over anger. Sita refused to be left behind, and Lakshmana, loyal as ever, declared that he too would join Rama in the forest. Together, they left the palace and all its riches behind.'},
+          {title:'Life in the Forest', text:'In the forest, life was simple and quiet. Rama, Sita, and Lakshmana lived among trees, rivers, and hermitages, far away from palace walls and royal ceremonies. Though they had lost comfort, they remained together, and that made their exile easier to bear. They met sages, protected the innocent, and learned to live with patience and strength. For a time, the forest felt peaceful. But hidden danger was drawing near. Ravana, the proud and powerful king of Lanka, heard of Sita’s beauty and became filled with selfish desire. He began to plan a cruel trick that would change their lives forever.'},
+          {title:'The Golden Deer', text:'One day, a dazzling golden deer appeared near their dwelling. Its beauty caught Sita’s eye, and she asked Rama to bring it to her. Rama went after it, and when a cry for help echoed through the forest, Lakshmana too was drawn away. In that brief and dangerous moment, Ravana appeared in disguise. When Sita was left alone, he revealed his true form and carried her away to Lanka. As she was taken across the sky, Sita cried out for Rama and dropped signs along the way, hoping they might help him find her. When Rama and Lakshmana returned and discovered what had happened, grief struck Rama like a storm, but sorrow soon turned into determination.'},
+          {title:'The Loyal Hanuman', text:'As Rama searched for Sita, he met Hanuman, a monkey warrior of great strength, intelligence, and devotion. Hanuman immediately recognized Rama’s goodness and offered him his complete loyalty. Their friendship became one of the strongest bonds in the story. When no path forward seemed clear, Hanuman became hope itself. He leaped across the ocean to Lanka, searched through Ravana’s mighty city, and finally found Sita in a grove, surrounded by sorrow but still firm in courage. He gave her Rama’s message and promised that help was coming. For Sita, those words were like light entering the darkness.'},
+          {title:'The Bridge to Lanka', text:'Rama then gathered an army of monkeys and bears, all united by friendship, courage, and a sense of justice. Before them stretched the vast ocean, standing between them and Lanka. Yet even this obstacle did not stop them. Working together, they built a bridge of stones across the sea. Step by step, the impossible became possible. Their march to Lanka was not just a journey toward battle, but a journey powered by faith, teamwork, and the refusal to give up when faced with something enormous.'},
+          {title:'The Great Battle', text:'In Lanka, a fierce war began. Ravana’s armies were strong, and the battle was filled with danger, sacrifice, and moments of deep courage. Great warriors fought on both sides, and many trials tested Rama and his allies. But Rama never lost sight of why he had come: to rescue Sita and to defeat injustice. At last, Rama faced Ravana himself. The battle between them was long and powerful, but in the end Rama’s righteousness prevailed. Ravana was defeated, and with his fall, the darkness he had spread began to lift. Sita was finally freed.'},
+          {title:'The Return of Light', text:'When the fourteen years of exile were complete, Rama, Sita, and Lakshmana returned to Ayodhya. The people were overjoyed. They welcomed them by lighting rows of lamps across the city, turning the night into a sea of glowing light. That joyful welcome is remembered to this day in the festival of Diwali. Rama was crowned king at last, and his rule became known as a time of justice, wisdom, peace, and kindness. Under his care, the kingdom flourished.'},
+          {title:'The Lesson of the Ramayana', text:'The Ramayana is more than a story of princes, battles, and kingdoms. It is a story about choosing what is right even when it is painful, keeping promises even when it costs dearly, and standing by the people we love through hardship. It teaches loyalty, courage, self-control, and faith in goodness. Again and again, the story reminds us that truth and love may be tested, but in the end they shine brighter than fear, pride, and evil.'}
+        ],
+        quiz:[
+          {q:'Who was the wise king of Ayodhya and father of Rama?', options:['Janaka','Dasharatha','Ravana','Bharata'], answer:1},
+          {q:'What contest did Rama win in Mithila?', options:['A horse race','A sword duel','Lifting and stringing a mighty bow','A riddle contest'], answer:2},
+          {q:'Who helped Rama find Sita in Lanka?', options:['Hanuman','Kaikeyi','Shatrughna','Janaka'], answer:0},
+          {q:'What festival is connected to Rama’s return to Ayodhya?', options:['Holi','Navratri','Diwali','Pongal'], answer:2}
+        ]
+      },
+      { id:'bhagavad-gita', title:'Bhagavad Gita', shelfLabel:'Sacred Teaching', icon:'🕉️', coverClass:'gita',
+        description:'Discover Krishna’s timeless teachings to Arjuna about duty, the soul, self-control, and doing what is right.',
+        overviewPages:[
+          'Long ago, on a vast battlefield called Kurukshetra, two groups of cousins were about to fight a great war. On one side were the Pandavas, who stood for truth and fairness. On the other side were the Kauravas, who had taken what did not belong to them. Among the Pandavas was a brave warrior named Arjuna. He was strong, skilled, and known for always doing what was right.',
+          'As Arjuna stood in his chariot, ready for battle, he looked across the field and saw something that filled his heart with sadness. He saw his own family members, teachers, and friends standing on the opposite side. Suddenly, he felt confused and weak. He thought, “How can I fight against people I love? Is winning this war really worth it?” His hands trembled, and he did not want to fight anymore.',
+          'At that moment, his charioteer, who was none other than Lord Krishna, gently spoke to him. Krishna was not just a guide but a wise teacher who understood life deeply. Seeing Arjuna’s confusion, Krishna began to explain important truths about life, duty, and the soul.',
+          'Krishna told Arjuna that the body may come and go, but the soul is eternal—it never dies. Just like people change clothes when they are old, the soul changes bodies but continues to exist. Because of this, Arjuna should not be afraid of death in the way he was thinking.',
+          'Krishna then explained the idea of duty, also called “dharma.” He told Arjuna that everyone has a responsibility in life, and for Arjuna, as a warrior, it was his duty to fight for justice and protect what is right. Running away from his duty out of fear or sadness would not be the right choice. Instead, he should do his duty with courage.',
+          'But Krishna also gave an even deeper lesson. He said that people should do their work without worrying too much about the result. Whether they win or lose, they should focus on doing the right thing with full effort and honesty. This teaching is called “karma yoga”—the path of action without attachment to results.',
+          'Krishna also spoke about controlling the mind. He explained that the mind can be restless, like the wind, but with practice and discipline, it can be trained to stay calm and focused. A calm mind helps a person make better decisions and stay strong even in difficult situations.',
+          'As Arjuna listened, he slowly began to understand. Krishna even showed him a special divine form, revealing that he was not just a simple charioteer but a powerful and universal being who exists everywhere. Arjuna was amazed and realized how small his worries were compared to the bigger picture of life.',
+          'With this new understanding, Arjuna’s fear disappeared. He picked up his bow again, now with a clear mind and a strong heart. He was ready to do his duty, not out of anger or hate, but because it was the right thing to do.',
+          'The Bhagavad Gita teaches us many important lessons. It tells us to stay calm during tough times, to do our responsibilities with honesty, and to not be overly worried about results. It reminds us that the soul is eternal and that courage, wisdom, and self-control are the keys to living a good life.'
+        ],
+        storyPages:[
+          {title:'The Battlefield of Kurukshetra', text:'On the great field of Kurukshetra, two armies stood facing one another. The moment was filled with tension, for this was no ordinary conflict. Families, teachers, and lifelong bonds stood divided by questions of justice and power. Among the Pandavas stood Arjuna, one of the finest warriors of his age. He was brave, disciplined, and deeply committed to what was right. Yet when he looked across the battlefield and recognized those he loved on the other side, his strength gave way to grief.'},
+          {title:'Arjuna’s Sorrow', text:'Arjuna’s hands trembled, his heart grew heavy, and his mind filled with painful questions. How could he raise his bow against his own relatives, teachers, and friends? Even if victory were possible, would it be worth such sorrow? The warrior who had faced danger many times now felt unable to move forward. He lowered his bow and confessed that he no longer wished to fight. In that moment, Arjuna’s struggle became more than a battle problem. It became a human problem—what should a person do when duty and emotion pull in opposite directions?'},
+          {title:'Krishna the Teacher', text:'Arjuna’s charioteer was Lord Krishna, who was far more than a guide for horses and wheels. Seeing Arjuna’s pain, Krishna began to teach him. He did not speak with anger or impatience, but with wisdom, calmness, and deep understanding. Krishna’s teachings would become the Bhagavad Gita, one of the most treasured spiritual conversations in the world. He began by helping Arjuna see that his fear came from confusion, and that true understanding would give him strength.'},
+          {title:'The Soul is Eternal', text:'Krishna explained that while the body is temporary, the soul is eternal. People are born, grow, age, and die, but the soul itself does not perish. It continues, just as a person changes worn-out clothes for new ones. This teaching did not remove the sadness of life, but it placed it in a wider truth. Arjuna began to understand that death was not the end he feared it to be, and that wisdom required seeing beyond the body alone.'},
+          {title:'Dharma and Responsibility', text:'Krishna then spoke of dharma, or duty. Every person has responsibilities shaped by their role, character, and purpose. For Arjuna, whose duty as a warrior was to protect justice, turning away from the battle out of fear would not be noble. Krishna did not tell Arjuna to act carelessly or with hatred. Instead, he taught him to act with clarity and courage. Doing what is right is not always comfortable, but it is still necessary.'},
+          {title:'Action Without Attachment', text:'One of Krishna’s deepest lessons was about action. He taught that people should do their work sincerely, but not become trapped by anxiety over the results. Success and failure can change, but right action must still be performed. This teaching is known as karma yoga—the path of selfless action. Krishna urged Arjuna to focus on effort, honesty, and righteousness, rather than fear, reward, or personal gain.'},
+          {title:'The Restless Mind', text:'Krishna also explained that the mind is often unsteady. It jumps from fear to desire, from anger to worry, like the wind moving in every direction. Yet he said the mind can be trained through discipline, reflection, and practice. A person who learns to steady the mind becomes stronger, calmer, and more able to face life’s difficulties. This was not just advice for Arjuna on a battlefield. It was advice for anyone who has ever struggled to remain peaceful in a confusing world.'},
+          {title:'The Divine Form', text:'To deepen Arjuna’s understanding, Krishna revealed his divine form. In that overwhelming vision, Arjuna saw that Krishna was not merely a friend or guide, but a universal being whose presence stretched beyond all ordinary limits. The vision was glorious, powerful, and humbling. Arjuna realized that his own fear and confusion were only a small part of a much greater truth unfolding in the universe.'},
+          {title:'Arjuna Rises Again', text:'With Krishna’s teachings in his heart, Arjuna’s confusion began to clear. He did not become harsh or careless. Instead, he became steady. He lifted his bow again, ready to act not out of anger, pride, or revenge, but because he now understood his duty. His strength returned, but it was now guided by wisdom. In that moment, Arjuna was transformed from a troubled warrior into a person acting with clarity and purpose.'},
+          {title:'The Message of the Gita', text:'The Bhagavad Gita continues to inspire people because its message reaches far beyond one battlefield. It teaches courage during confusion, responsibility without selfishness, calmness during hardship, and trust in deeper truth. It reminds us that the soul is eternal, the mind can be trained, and right action matters even when life feels uncertain. For many, it is not just a book of teachings, but a guide for how to live with wisdom and strength.'}
+        ],
+        quiz:[
+          {q:'Why was Arjuna filled with sadness before the battle?', options:['He lost his chariot','He saw loved ones on the other side','He forgot his bow','He was afraid of Krishna'], answer:1},
+          {q:'Who guided Arjuna in the Bhagavad Gita?', options:['Dasharatha','Hanuman','Krishna','Ravana'], answer:2},
+          {q:'What does Krishna teach about the soul?', options:['It changes with moods','It is eternal','It disappears quickly','It only exists in battle'], answer:1},
+          {q:'What is karma yoga?', options:['Sleeping peacefully','Winning every battle','Action without attachment to results','Giving up responsibility'], answer:2}
+        ]
+      },
+      { id:'four-vedas', title:'Four Vedas', shelfLabel:'Ancient Wisdom', icon:'📜', coverClass:'vedas',
+        description:'Explore the Rigveda, Yajurveda, Samaveda, and Atharvaveda, four foundational collections of knowledge and spiritual tradition.',
+        overviewPages:[
+          'The four Vedas are among the oldest sacred texts of India. They are the Rigveda, Yajurveda, Samaveda, and Atharvaveda. Together, they contain hymns, chants, rituals, and teachings that guided spiritual life, learning, and daily practice for generations.',
+          'The Rigveda is known for its hymns. These verses praise natural forces and divine beings, and they reflect wonder about the world, creation, and life itself.',
+          'The Yajurveda focuses on rituals and ceremonies. It explains words and actions used in sacrifices and sacred practices, helping people perform duties with care and devotion.',
+          'The Samaveda is connected with music and chant. Many of its verses are meant to be sung, showing how sound and rhythm can be part of worship and spiritual focus.',
+          'The Atharvaveda includes teachings related to daily life, healing, peace, and protection. It brings spiritual wisdom closer to everyday living.',
+          'Together, the four Vedas are not just books, but a great library of early knowledge. They shaped philosophy, worship, music, ritual, and learning, and they continue to be respected as important sources of wisdom.'
+        ],
+        storyPages:[
+          {title:'A Library of Ancient Knowledge', text:'The four Vedas can be imagined as four great shelves in a sacred library of wisdom. They are among the oldest and most respected texts in Indian tradition, and each one carries a distinct voice. Together they preserve hymns, chants, rituals, reflections, and teachings that shaped spiritual life over many centuries. Rather than one single story with one hero, the Vedas are like a vast collection of voices helping people understand the world, the sacred, and themselves.'},
+          {title:'Rigveda: Hymns of Wonder', text:'The Rigveda is the oldest of the four and is best known for its hymns. These verses praise divine powers, natural forces, and the mysteries of the universe. In them, people express awe at fire, dawn, wind, rain, and creation itself. The Rigveda shows early human beings looking at the world with curiosity and reverence, asking big questions about where life came from and what truths lie behind the visible world.'},
+          {title:'Yajurveda: The Path of Ritual', text:'The Yajurveda focuses on rituals and sacred actions. It explains words to be spoken and steps to be followed during ceremonies. More than a guidebook for outer practice, it shows that action can become meaningful when done with care, discipline, and devotion. The Yajurveda teaches that ritual is not empty movement, but a way of bringing intention, order, and sacredness into human life.'},
+          {title:'Samaveda: The Power of Chant', text:'The Samaveda brings music into the heart of spiritual tradition. Many of its verses are meant to be sung rather than simply spoken, and this gives the text a unique beauty. It reminds us that truth is not only understood through thought, but can also be felt through rhythm, melody, and sound. The Samaveda shows how chanting can lift the mind, deepen concentration, and turn worship into an experience of harmony.'},
+          {title:'Atharvaveda: Wisdom for Daily Life', text:'The Atharvaveda reaches into the everyday world. It includes teachings linked to healing, peace, protection, and the needs of ordinary life. In this way, it helps bridge the gap between the sacred and the practical. It suggests that spiritual wisdom does not belong only in ceremonies or distant forests, but can guide people in homes, communities, and daily struggles as well.'},
+          {title:'The Enduring Importance of the Vedas', text:'Together, the four Vedas form a lasting foundation for philosophy, ritual, music, and spiritual thought. They influenced later traditions, inspired generations of teachers and seekers, and continue to be studied with deep respect. Their importance lies not only in their age, but in the breadth of human reflection they preserve—wonder, devotion, discipline, and the search for truth.'}
+        ],
+        quiz:[
+          {q:'Which Veda is best known for hymns?', options:['Rigveda','Yajurveda','Samaveda','Atharvaveda'], answer:0},
+          {q:'Which Veda focuses on rituals and ceremonies?', options:['Rigveda','Yajurveda','Samaveda','Atharvaveda'], answer:1},
+          {q:'Which Veda is strongly connected with music and chant?', options:['Rigveda','Yajurveda','Samaveda','Atharvaveda'], answer:2},
+          {q:'Which Veda includes teachings related to daily life and healing?', options:['Rigveda','Yajurveda','Samaveda','Atharvaveda'], answer:3}
+        ]
+      }
+    ];
+
+    const state = { selectedBookId:null, mode:'overview', page:0, direction:1, showQuiz:false, quizSubmitted:false, answers:{} };
+    const app = document.getElementById('app');
+    const getSelectedBook = () => books.find(b => b.id === state.selectedBookId) || null;
+    const getPages = (book) => !book ? [] : (state.mode === 'story' ? book.storyPages : book.overviewPages.map((text,i)=>({title:`Page ${i+1}`, text})));
+    const resetQuiz = () => { state.showQuiz=false; state.quizSubmitted=false; state.answers={}; };
+
+    function openBook(bookId, mode){ state.selectedBookId=bookId; state.mode=mode||'overview'; state.page=0; state.direction=1; resetQuiz(); render(); }
+    function closeBook(){ state.selectedBookId=null; state.mode='overview'; state.page=0; state.direction=1; resetQuiz(); render(); }
+    function setMode(mode){ state.mode=mode; state.page=0; state.direction=1; resetQuiz(); render(); }
+    function nextPage(){ const book=getSelectedBook(); const pages=getPages(book); if(state.page<pages.length-1) animateToPage(state.page+1,1); }
+    function prevPage(){ if(state.page>0) animateToPage(state.page-1,-1); }
+    function animateToPage(nextIndex, direction){ const stage=document.querySelector('.book-stage'); const existing=stage&&stage.querySelector('.page.current'); if(!existing){ state.page=nextIndex; state.direction=direction; render(); return; } existing.classList.remove('enter-from-right','enter-from-left'); existing.classList.add(direction>0?'exit-to-left':'exit-to-right'); setTimeout(()=>{ state.page=nextIndex; state.direction=direction; render(); },210); }
+    function openQuiz(){ state.showQuiz=true; state.quizSubmitted=false; state.answers={}; render(); }
+    function selectAnswer(questionIndex, answerIndex){ state.answers[questionIndex]=answerIndex; }
+    function submitQuiz(){ state.quizSubmitted=true; render(); }
+    function scoreQuiz(book){ let correct=0; book.quiz.forEach((q,i)=>{ if(Number(state.answers[i])===q.answer) correct+=1; }); return correct; }
+
+    function homeView(){
+      return `<section class="hero"><div class="eyebrow">Sacred Stories Library</div><h1>Interactive Book Library</h1><p>Choose a book, switch between Reading Mode and Story Mode, flip through pages with a storybook animation, and take an optional quiz at the end of every book.</p><div class="html-note">Made by Srithik Kumar</div></section>
+      <section class="shelf">${books.map(book=>`<article class="book-card"><div class="cover ${book.coverClass}"><div class="cover-icon">${book.icon}</div><div class="eyebrow">${book.shelfLabel}</div><h2>${book.title}</h2><div class="desc">${book.description}</div></div><div class="button-row"><button data-open="${book.id}" data-mode="overview">Reading Mode</button><button class="primary" data-open="${book.id}" data-mode="story">Story Mode</button></div></article>`).join('')}</section>`;
+    }
+
+    function quizView(book){
+      const score = state.quizSubmitted ? scoreQuiz(book) : null;
+      return `<div class="top-actions"><button data-action="back">← Back to Library</button><div class="mode-switch"><button data-action="close-quiz" class="muted">Back to Book</button></div></div>
+      <section class="reader-shell active"><aside class="sidebar"><div class="book-badge">${book.icon}</div><div class="smallcaps">${book.shelfLabel}</div><h1 style="font-size:2.4rem;margin-top:8px">${book.title}</h1><p style="line-height:1.7;color:#444">${book.description}</p><div class="mode-note"><div class="smallcaps">Optional Quiz</div><div style="font-size:1.5rem;font-weight:900;margin-top:8px">Test what you learned</div><div style="margin-top:8px">Answer the questions below, then submit to see your score.</div></div></aside>
+      <section class="quiz-card"><h2 class="quiz-title">${book.title} Quiz</h2><p style="line-height:1.7;color:#444;margin-top:10px">This quiz is optional. You can always go back to the book.</p>
+      ${book.quiz.map((item,qi)=>`<div class="question-block"><div class="question-text">${qi+1}. ${item.q}</div><div class="option-list">${item.options.map((opt,oi)=>`<label class="option-item"><input type="radio" name="q${qi}" value="${oi}" ${String(state.answers[qi])===String(oi)?'checked':''} ${state.quizSubmitted?'disabled':''}><span>${opt}</span></label>`).join('')}</div></div>`).join('')}
+      <div class="quiz-actions">${state.quizSubmitted?`<button class="gold" data-action="retake-quiz">Retake Quiz</button>`:`<button class="primary" data-action="submit-quiz">Submit Quiz</button>`}<button data-action="close-quiz">Back to Book</button></div>
+      ${state.quizSubmitted?`<div class="result-card" style="margin-top:20px"><div class="smallcaps">Your Result</div><div class="score-big">${score} / ${book.quiz.length}</div><div style="line-height:1.7;color:#444">${score===book.quiz.length?'Excellent work — you got everything correct.':score>=Math.ceil(book.quiz.length/2)?'Nice job — you understood a lot of the book.':'Good try — you can go back and read again, then retake the quiz.'}</div><div class="answer-review">${book.quiz.map((item,qi)=>{ const userAns=Number(state.answers[qi]); const isCorrect=userAns===item.answer; return `<div class="review-item ${isCorrect?'correct':'incorrect'}"><div style="font-weight:900">${qi+1}. ${item.q}</div><div style="margin-top:8px">Your answer: ${Number.isInteger(userAns)?item.options[userAns]:'No answer selected'}</div><div style="margin-top:6px">Correct answer: ${item.options[item.answer]}</div></div>`; }).join('')}</div></div>`:''}
+      </section></section>`;
+    }
+
+    function readerView(book){
+      const pages=getPages(book), page=pages[state.page], enterClass=state.direction>0?'enter-from-right':'enter-from-left', onLastPage=state.page===pages.length-1;
+      return `<div class="top-actions"><button data-action="back">← Back to Library</button><div class="mode-switch"><button data-action="mode" data-mode="overview" class="${state.mode==='overview'?'active':'muted'}">Reading Mode</button><button data-action="mode" data-mode="story" class="${state.mode==='story'?'active gold':'muted'}">Story Mode</button></div></div>
+      <section class="reader-shell active"><aside class="sidebar"><div class="book-badge">${book.icon}</div><div class="smallcaps">${book.shelfLabel}</div><h1 style="font-size:2.4rem;margin-top:8px">${book.title}</h1><p style="line-height:1.7;color:#444">${book.description}</p><div class="mode-note"><div class="smallcaps">Current Mode</div><div style="font-size:1.5rem;font-weight:900;margin-top:8px">${state.mode==='story'?'Story Mode':'Reading Mode'}</div><div style="margin-top:8px">${state.mode==='story'?'Longer storybook pages with smoother reading and richer flow.':'Full reading pages using the longer source text.'}</div></div></aside>
+      <section class="book-area"><div class="book-header"><div><div class="smallcaps">${book.title}</div><h2 style="margin:.45rem 0 0;font-size:2rem;line-height:1.15">${page.title}</h2></div><div class="page-count">${state.page+1} / ${pages.length}</div></div>
+      <div class="book-stage"><div class="page current ${enterClass}"><div class="page-title">${page.title}</div><div class="page-text">${page.text}</div></div></div>
+      <div class="reader-actions"><button data-action="prev" ${state.page===0?'disabled':''}>← Previous</button><div style="display:flex;gap:12px;flex-wrap:wrap">${onLastPage?`<button class="success" data-action="open-quiz">Take Optional Quiz</button>`:''}<button class="primary" data-action="next" ${onLastPage?'disabled':''}>Next →</button></div></div></section></section>`;
+    }
+
+    function render(){
+      const book=getSelectedBook();
+      app.innerHTML = !book ? homeView() : (state.showQuiz ? quizView(book) : readerView(book));
+
+      app.querySelectorAll('[data-open]').forEach(btn => btn.addEventListener('click', () => openBook(btn.dataset.open, btn.dataset.mode)));
+      const back=app.querySelector('[data-action="back"]'); if(back) back.addEventListener('click', closeBook);
+      app.querySelectorAll('[data-action="mode"]').forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
+      const next=app.querySelector('[data-action="next"]'); if(next) next.addEventListener('click', nextPage);
+      const prev=app.querySelector('[data-action="prev"]'); if(prev) prev.addEventListener('click', prevPage);
+      const openQuizBtn=app.querySelector('[data-action="open-quiz"]'); if(openQuizBtn) openQuizBtn.addEventListener('click', openQuiz);
+      app.querySelectorAll('[data-action="close-quiz"]').forEach(btn => btn.addEventListener('click', () => { state.showQuiz=false; render(); }));
+      const submitQuizBtn=app.querySelector('[data-action="submit-quiz"]'); if(submitQuizBtn) submitQuizBtn.addEventListener('click', submitQuiz);
+      const retakeQuizBtn=app.querySelector('[data-action="retake-quiz"]'); if(retakeQuizBtn) retakeQuizBtn.addEventListener('click', () => { state.quizSubmitted=false; state.answers={}; render(); });
+      app.querySelectorAll('.option-item input').forEach(input => input.addEventListener('change', (e) => selectAnswer(Number(e.target.name.replace('q','')), Number(e.target.value))));
+    }
+
+    render();
+  </script>
+</body>
+</html>
